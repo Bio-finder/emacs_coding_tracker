@@ -1,0 +1,52 @@
+* Emacs coding tracker
+
+*[disclaimer]*: This repo is under active coding so it's still not fully released.
+
+The aim of this repo is to build a coding tracker to reccord the time spent on any file and on any programming language. Currently, the script supports the following programming languages:
+
+1) Python (extension file .py)
+2) Bash (extension file .sh)
+3) Perl (entension file .pl)
+4) Org-mode (extesion file .org)
+
+More languages could be added on demand.
+
+** How to set up the emacs coding tracker?
+1) Clone the repo
+2) Install the python package inotify in your python environment that you use with emacs for programming.
+3) In the file named /emacs_coding_tracker.py/, set up the path of the files that lead to the bookmark that you use, the emacs history and the file that will save all your coding stats.
+4) In the file /.emacs/ you will need to add the following lines of code so the history is saved every seconds instead of every five minutes and also enable the reccording of the command history.
+   
+#+begin_src lisp
+  ;; save the history every seconds                         
+  (defcustom savehist-autosave-interval (* 1)               
+    "The interval between autosaves of minibuffer history.  
+  If set to nil, disables timer-based autosaving."          
+    :type '(choice (const :tag "Disabled" nil)              
+                   (integer :tag "Seconds"))                
+    :group 'savehist)
+  (setq savehist-additional-variables
+        '(command-history))          
+  (savehist-mode)                                          
+#+end_src
+6) Now you're almost ready to start the tracker, just add an alias in your /.bashrc/ file to start the tracker at the same time as emacs like the following line of code:
+
+   #+begin_src bash
+alias emacs_full='devEnviLoad                                          
+emacs >log &                                                                
+python3 ~/toy_playgrounds/emacs_coding_tracker/emacs_coding_tracker.py'
+   #+end_src
+
+You're ready to track your coding time. This should also work on remote host file use (using tramp) but don't hesitate to let me know if something is wrong.
+
+What is still needed to do is a script to build graphs and use the stat file. I'll try to add this as fast as I can.
+
+** How to use emacs for tracking the time of coding
+1) Just start emacs using your new alias that launch the tracker at the same time. It will load the bookmarks and start listening for events happening to your history file.
+2) Each time you open a file by doing C-f or C-r-b the time of coding will start to be recorded for the file opened.
+3) To Save the time of coding for the files just close the buffer before closing emacs by doing C-k and the time spent on the file will be saved!
+4) If you close emacs and have still some files running it will save the time of work before closing the tracker also!
+
+** Plotting your stats
+1) Set the variable to point to your stat file in the script /coding_stat_plotter.py/
+2) Run the script and it will generate a pie chart of the different languages to see which language you used the most and a stat file of hours per day spent coding for the whole time you recorded your coding stats. It's still experimental so I will need to tune those graphs and add some more graphs...
