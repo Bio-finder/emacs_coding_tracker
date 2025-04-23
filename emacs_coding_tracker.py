@@ -32,9 +32,9 @@ def read_event(filename: str, previous_file: list, bookmarks_info):
                     if target.startswith('*'):
                         return ['not_file_related', ''], actual_file
                     if command_line == 'find-file':
-                        return ['opening_file', re.sub('~/.*/|~/|/.*/', '', target)], actual_file
+                        return ['opening_file', re.sub('~/.*/|~/|/.*/', '', target), os.path.basename(os.path.dirname(target))], actual_file
                     elif command_line == 'bookmark-jump':
-                        return ['opening_file', bookmarks_info[target]], actual_file
+                        return ['opening_file'] + bookmarks_info[target], actual_file
                     elif command_line == 'kill-buffer':
                         return ['closing_buffer', target], actual_file
                 else:
@@ -66,18 +66,18 @@ def get_programming_language(fileN: str):
 def save_event_and_compute_time(event_log, events_dict, save_time_file):
     if event_log[0] == 'opening_file':
         print(f'[INFO]: starting to track file {event_log[1]}')
-        events_dict[event_log[1]] = datetime.datetime.now()
+        events_dict[event_log[1]] = [datetime.datetime.now(), event_log[2]]
         return events_dict
     elif event_log[0] == 'closing_buffer':
         print(f'[INFO]: Recording time of coding for file {event_log[1]}')
         with Path(save_time_file).open('a') as stf:
             time_spent_on_file = datetime.datetime.now() - \
-                events_dict[event_log[1]]
+                events_dict[event_log[1]][0]
             today = datetime.datetime.today()
             programming_language = get_programming_language(event_log[1])
             with Path(save_time_file).open('a') as sft:
                 sft.write(
-                    f'{today}\t{time_spent_on_file}\t{programming_language}\t{event_log[1]}\n')
+                    f'{today}\t{time_spent_on_file}\t{programming_language}\t{event_log[1]}\t{events_dict[event_log[1]][1]}\n')
             # Don't remove as sometime we switch buffer so we don't close it totally but change the time of beginning of cound in case you donc
             del events_dict[event_log[1]]
             return events_dict
@@ -89,9 +89,11 @@ def parse_bookmaks(book_file, book_alias):
         for entry in bf:
             if entry.startswith(' (filename .'):
                 file_name = re.sub(' [(].*/', '', entry).replace('")\n', '')
+                file_path = re.search('"(.+?)"', entry)
                 alias = previous_entry.replace(
                     '(("', '').replace('("', '').replace('"\n', '')
-                book_alias[alias] = file_name
+                book_alias[alias] = [file_name,
+                                     os.path.basename(os.path.dirname(file_path.group(1)))]
             else:
                 previous_entry = entry
     print('[INFO]: bookmarks parsed.')
@@ -110,12 +112,12 @@ def check_emacs_running():
 def reccord_time_before_shutting_down(events_dic, save_time_file):
     for f in events_dic.keys():
         with Path(save_time_file).open('a') as stf:
-            time_spent_on_file = datetime.datetime.now() - events_dic[f]
+            time_spent_on_file = datetime.datetime.now() - events_dic[f][0]
             today = datetime.datetime.today()
             programming_language = get_programming_language(f)
             with Path(save_time_file).open('a') as sft:
                 sft.write(
-                    f'{today}\t{time_spent_on_file}\t{programming_language}\t{f}\n')
+                    f'{today}\t{time_spent_on_file}\t{programming_language}\t{f}\t{events_dic[f][1]}\n')
 
 
 def main():
